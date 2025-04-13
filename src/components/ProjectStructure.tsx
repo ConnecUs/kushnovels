@@ -1,11 +1,30 @@
-
 import React, { useState } from 'react';
-import { ChevronRight, ChevronDown, Plus, Edit, Trash, GripVertical, Pencil } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Edit, Trash, GripVertical, Pencil, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Chapter, Scene, Project } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
+import { exportChapter, exportProject, exportScene } from '@/utils/exportUtils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface ProjectStructureProps {
   project: Project;
@@ -28,6 +47,15 @@ const ProjectStructure: React.FC<ProjectStructureProps> = ({
   const [editingChapter, setEditingChapter] = useState<string | null>(null);
   const [editingScene, setEditingScene] = useState<{ chapterId: string; sceneId: string } | null>(null);
   const [newTitle, setNewTitle] = useState('');
+  const [exportOptionsOpen, setExportOptionsOpen] = useState(false);
+  const [selectedChapterId, setSelectedChapterId] = useState<string | null>(null);
+  const [selectedSceneId, setSelectedSceneId] = useState<string | null>(null);
+  const [exportOptions, setExportOptions] = useState({
+    includeChapterTitle: true,
+    includeSceneTitles: true,
+    addPageBreaks: true,
+    formatType: "plain" as "plain" | "markdown",
+  });
 
   const toggleChapter = (chapterId: string) => {
     if (expandedChapters.includes(chapterId)) {
@@ -162,16 +190,70 @@ const ProjectStructure: React.FC<ProjectStructureProps> = ({
     toast.success('Scene deleted');
   };
 
+  const handleExportScene = (chapterId: string, sceneId: string) => {
+    const chapter = project.chapters.find(c => c.id === chapterId);
+    if (!chapter) return;
+    
+    const scene = chapter.scenes.find(s => s.id === sceneId);
+    if (!scene) return;
+    
+    exportScene(scene);
+    toast.success(`Scene "${scene.title}" exported successfully`);
+  };
+
+  const handleExportChapter = (chapterId: string) => {
+    const chapter = project.chapters.find(c => c.id === chapterId);
+    if (!chapter) return;
+    
+    exportChapter(chapter, exportOptions);
+    toast.success(`Chapter "${chapter.title}" exported successfully`);
+    setExportOptionsOpen(false);
+  };
+
+  const handleExportProject = () => {
+    exportProject(project.chapters, project.title, exportOptions);
+    toast.success(`Project "${project.title}" exported successfully`);
+    setExportOptionsOpen(false);
+  };
+
+  const openExportDialog = (chapterId?: string, sceneId?: string) => {
+    setSelectedChapterId(chapterId || null);
+    setSelectedSceneId(sceneId || null);
+    setExportOptionsOpen(true);
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-serif font-semibold">Project Structure</h2>
-        {!addingChapter && (
-          <Button onClick={() => setAddingChapter(true)}>
-            <Plus size={16} className="mr-2" />
-            Add Chapter
-          </Button>
-        )}
+        <div className="flex space-x-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <FileDown size={16} className="mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => openExportDialog()}>
+                Export Entire Project
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>Configure Export</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => openExportDialog()}>
+                Export with Custom Settings
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          {!addingChapter && (
+            <Button onClick={() => setAddingChapter(true)}>
+              <Plus size={16} className="mr-2" />
+              Add Chapter
+            </Button>
+          )}
+        </div>
       </div>
 
       {addingChapter && (
@@ -238,6 +320,21 @@ const ProjectStructure: React.FC<ProjectStructureProps> = ({
               
               {editingChapter !== chapter.id && (
                 <div className="flex space-x-1">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <FileDown size={16} />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleExportChapter(chapter.id)}>
+                        Quick Export
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openExportDialog(chapter.id)}>
+                        Configure Export
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button
                     variant="ghost"
                     size="icon"
@@ -265,7 +362,7 @@ const ProjectStructure: React.FC<ProjectStructureProps> = ({
                   <div 
                     key={scene.id}
                     className={cn(
-                      "flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-secondary/50",
+                      "flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-secondary/50 group",
                       activeChapterId === chapter.id && activeSceneId === scene.id && "bg-secondary"
                     )}
                     onClick={() => onSelectScene(chapter.id, scene.id)}
@@ -308,6 +405,16 @@ const ProjectStructure: React.FC<ProjectStructureProps> = ({
                     
                     {!(editingScene?.chapterId === chapter.id && editingScene?.sceneId === scene.id) && (
                       <div className="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleExportScene(chapter.id, scene.id);
+                          }}
+                        >
+                          <FileDown size={14} />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -386,6 +493,84 @@ const ProjectStructure: React.FC<ProjectStructureProps> = ({
           </div>
         )}
       </div>
+      
+      <Dialog open={exportOptionsOpen} onOpenChange={setExportOptionsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Export Options</DialogTitle>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="include-chapter-title">Include Chapter Titles</Label>
+              <Switch
+                id="include-chapter-title"
+                checked={exportOptions.includeChapterTitle}
+                onCheckedChange={(checked) => 
+                  setExportOptions({...exportOptions, includeChapterTitle: checked})
+                }
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <Label htmlFor="include-scene-titles">Include Scene Titles</Label>
+              <Switch
+                id="include-scene-titles"
+                checked={exportOptions.includeSceneTitles}
+                onCheckedChange={(checked) => 
+                  setExportOptions({...exportOptions, includeSceneTitles: checked})
+                }
+              />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <Label htmlFor="add-page-breaks">Add Page Breaks</Label>
+              <Switch
+                id="add-page-breaks"
+                checked={exportOptions.addPageBreaks}
+                onCheckedChange={(checked) => 
+                  setExportOptions({...exportOptions, addPageBreaks: checked})
+                }
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Format Type</Label>
+              <RadioGroup 
+                value={exportOptions.formatType} 
+                onValueChange={(value: "plain" | "markdown") => 
+                  setExportOptions({...exportOptions, formatType: value})
+                }
+                className="flex space-x-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="plain" id="plain" />
+                  <Label htmlFor="plain">Plain Text</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="markdown" id="markdown" />
+                  <Label htmlFor="markdown">Markdown</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExportOptionsOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              if (selectedChapterId && !selectedSceneId) {
+                handleExportChapter(selectedChapterId);
+              } else {
+                handleExportProject();
+              }
+            }}>
+              Export
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -6,6 +6,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Scene, Chapter } from '@/types';
 import { toast } from 'sonner';
+import { exportScene } from '@/utils/exportUtils';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from '@/components/ui/dropdown-menu';
 
 interface EditorProps {
   activeChapter?: Chapter;
@@ -42,15 +51,27 @@ const Editor: React.FC<EditorProps> = ({ activeChapter, activeScene, onSave }) =
     toast.success('Saved successfully');
   };
 
-  const exportText = () => {
-    const blob = new Blob([content], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Exported successfully');
+  const handleExport = (format: 'txt' | 'md' = 'txt') => {
+    if (!activeScene) return;
+    
+    const formattedTitle = title.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').toLowerCase();
+    const extension = format === 'md' ? 'md' : 'txt';
+    const fileName = `${formattedTitle}.${extension}`;
+    
+    if (format === 'md') {
+      const mdContent = `# ${title}\n\n${content}`;
+      const blob = new Blob([mdContent], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      exportScene(activeScene, fileName);
+    }
+    
+    toast.success(`Scene exported as ${format.toUpperCase()}`);
   };
 
   return (
@@ -66,10 +87,24 @@ const Editor: React.FC<EditorProps> = ({ activeChapter, activeScene, onSave }) =
             <Save size={16} className="mr-2" />
             Save
           </Button>
-          <Button variant="outline" size="sm" onClick={exportText}>
-            <FileDown size={16} className="mr-2" />
-            Export
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <FileDown size={16} className="mr-2" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => handleExport('txt')}>
+                Export as Text
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('md')}>
+                Export as Markdown
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
