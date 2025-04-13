@@ -38,3 +38,11 @@ export interface Project {
   characters: Character[];
   prompts?: Prompt[];
 }
+
+// Add the missing type definitions for AI Assistant
+export type AIPurpose = 'plot-idea' | 'character-development' | 'dialogue' | 'setting-description' | 'conflict' | 'rewrite';
+
+export interface AIPrompt {
+  purpose: AIPurpose;
+  content: string;
+}
