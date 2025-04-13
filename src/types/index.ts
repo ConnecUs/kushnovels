@@ -1,4 +1,3 @@
-
 export interface Scene {
   id: string;
   title: string;
@@ -39,10 +38,17 @@ export interface Project {
   prompts?: Prompt[];
 }
 
-// Add the missing type definitions for AI Assistant
+// AI Assistant types
 export type AIPurpose = 'plot-idea' | 'character-development' | 'dialogue' | 'setting-description' | 'conflict' | 'rewrite';
 
 export interface AIPrompt {
   purpose: AIPurpose;
   content: string;
+}
+
+// Ollama configuration types
+export interface OllamaConfig {
+  enabled: boolean;
+  serverUrl: string;
+  model: string;
 }

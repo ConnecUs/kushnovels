@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Editor from '@/components/Editor';
 import AIAssistant from '@/components/AIAssistant';
+import OllamaSettings from '@/components/OllamaSettings';
 import CharacterProfile from '@/components/CharacterProfile';
 import ProjectStructure from '@/components/ProjectStructure';
 import PromptManager from '@/components/PromptManager';
@@ -14,7 +14,6 @@ const Index: React.FC = () => {
   const [activeChapterId, setActiveChapterId] = useState<string | undefined>(undefined);
   const [activeSceneId, setActiveSceneId] = useState<string | undefined>(undefined);
   
-  // Initialize with sample project data
   const [project, setProject] = useState<Project>({
     id: '1',
     title: 'My Novel',
@@ -196,6 +195,10 @@ const Index: React.FC = () => {
         
         {activeTab === 'ai-assistant' && (
           <AIAssistant />
+        )}
+        
+        {activeTab === 'ai-settings' && (
+          <OllamaSettings />
         )}
       </div>
     </div>

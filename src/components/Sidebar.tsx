@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Book, Users, Bookmark, FileText, ChevronLeft, ChevronRight, Home, Settings, PenLine, Star, Moon, Sun } from 'lucide-react';
+import { Book, Users, Bookmark, FileText, ChevronLeft, ChevronRight, Home, Settings, PenLine, Star, Moon, Sun, ServerCog } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Project } from '@/types';
@@ -27,6 +28,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'characters', label: 'Characters', icon: Users },
     { id: 'prompts', label: 'Prompts', icon: Bookmark },
     { id: 'ai-assistant', label: 'AI Assistant', icon: FileText },
+    { id: 'ai-settings', label: 'AI Settings', icon: ServerCog },
   ];
 
   return (
