@@ -5,7 +5,8 @@ import Editor from '@/components/Editor';
 import AIAssistant from '@/components/AIAssistant';
 import CharacterProfile from '@/components/CharacterProfile';
 import ProjectStructure from '@/components/ProjectStructure';
-import { Project, Character } from '@/types';
+import PromptManager from '@/components/PromptManager';
+import { Project, Character, Prompt } from '@/types';
 
 const Index: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
@@ -49,7 +50,15 @@ const Index: React.FC = () => {
         background: 'Grew up in a small town but always dreamed of adventure. Left home at 18 after a family tragedy.',
       },
     ],
-    notes: [],
+    prompts: [
+      {
+        id: 'prompt1',
+        title: 'Character Introduction',
+        content: 'Create a detailed character introduction for {{character_name}} who is {{trait1}}, {{trait2}}, and {{trait3}}. Describe their appearance, personality, and a significant event that shaped them.',
+        category: 'character',
+        tags: ['character', 'introduction', 'background'],
+      },
+    ],
   });
 
   const handleUpdateProject = (updatedProject: Project) => {
@@ -107,6 +116,29 @@ const Index: React.FC = () => {
     });
   };
 
+  const handleAddPrompt = (prompt: Prompt) => {
+    setProject({
+      ...project,
+      prompts: [...(project.prompts || []), prompt],
+    });
+  };
+
+  const handleUpdatePrompt = (id: string, updatedData: Partial<Prompt>) => {
+    setProject({
+      ...project,
+      prompts: (project.prompts || []).map(prompt =>
+        prompt.id === id ? { ...prompt, ...updatedData } : prompt
+      ),
+    });
+  };
+
+  const handleDeletePrompt = (id: string) => {
+    setProject({
+      ...project,
+      prompts: (project.prompts || []).filter(prompt => prompt.id !== id),
+    });
+  };
+
   const activeChapter = activeChapterId
     ? project.chapters.find(chapter => chapter.id === activeChapterId)
     : undefined;
@@ -150,6 +182,15 @@ const Index: React.FC = () => {
             onAddCharacter={handleAddCharacter}
             onUpdateCharacter={handleUpdateCharacter}
             onDeleteCharacter={handleDeleteCharacter}
+          />
+        )}
+        
+        {activeTab === 'prompts' && (
+          <PromptManager
+            prompts={project.prompts || []}
+            onAddPrompt={handleAddPrompt}
+            onUpdatePrompt={handleUpdatePrompt}
+            onDeletePrompt={handleDeletePrompt}
           />
         )}
         

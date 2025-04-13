@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Book, Users, Bookmark, FileText, ChevronLeft, ChevronRight, Home, Settings, PenLine, Star, Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -26,7 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     { id: 'editor', label: 'Editor', icon: PenLine },
     { id: 'chapters', label: 'Chapters', icon: Book },
     { id: 'characters', label: 'Characters', icon: Users },
-    { id: 'notes', label: 'Notes', icon: Bookmark },
+    { id: 'prompts', label: 'Prompts', icon: Bookmark },
     { id: 'ai-assistant', label: 'AI Assistant', icon: FileText },
   ];
 
