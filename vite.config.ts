@@ -3,7 +3,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-// Import the module with a specific type definition to resolve the TypeScript error
+// Import the HTML transform plugin
 import htmlTransform from "./vite-plugin-html-transform.js";
 
 // https://vitejs.dev/config/
