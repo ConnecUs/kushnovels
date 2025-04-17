@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,13 +13,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { OllamaConfig } from '@/types';
 import { getOllamaConfig, saveOllamaConfig, testOllamaConnection, availableOllamaModels } from '@/utils/ollamaUtils';
-import { RefreshCw, Check, X } from 'lucide-react';
+import { RefreshCw, Check, X, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const OllamaSettings: React.FC = () => {
   const [config, setConfig] = useState<OllamaConfig>(getOllamaConfig());
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'untested' | 'success' | 'failed'>('untested');
+  const [lastTestedConfig, setLastTestedConfig] = useState<string>('');
 
   useEffect(() => {
     // Load config from localStorage on mount
@@ -28,8 +29,14 @@ const OllamaSettings: React.FC = () => {
   }, []);
 
   const handleSaveConfig = () => {
-    saveOllamaConfig(config);
-    toast.success('Ollama settings saved successfully');
+    // Only save if Ollama is disabled or if the connection was successful
+    if (!config.enabled || (connectionStatus === 'success' && lastTestedConfig === JSON.stringify(config))) {
+      saveOllamaConfig(config);
+      toast.success('Ollama settings saved successfully');
+    } else if (config.enabled) {
+      // If Ollama is enabled but not successfully tested, show a warning
+      toast.warning('Please test the connection before saving enabled settings');
+    }
   };
 
   const handleTestConnection = async () => {
@@ -37,19 +44,36 @@ const OllamaSettings: React.FC = () => {
     setConnectionStatus('untested');
     
     try {
+      const currentConfigString = JSON.stringify(config);
+      console.log("Testing connection with config:", config);
+      
       const success = await testOllamaConnection(config);
       setConnectionStatus(success ? 'success' : 'failed');
       
       if (success) {
+        setLastTestedConfig(currentConfigString);
         toast.success('Successfully connected to Ollama server');
       } else {
         toast.error('Failed to connect to Ollama server');
       }
     } catch (error) {
+      console.error("Error during connection test:", error);
       setConnectionStatus('failed');
       toast.error('Error connecting to Ollama server');
     } finally {
       setIsConnecting(false);
+    }
+  };
+
+  const handleToggleEnable = (checked: boolean) => {
+    if (checked && connectionStatus !== 'success') {
+      // If trying to enable without a successful connection test
+      toast.warning('Please test the connection first before enabling Ollama');
+      // Don't enable yet, but update the rest of the config
+      setConfig(prev => ({ ...prev }));
+    } else {
+      // Otherwise update the config normally
+      setConfig(prev => ({ ...prev, enabled: checked }));
     }
   };
 
@@ -70,6 +94,24 @@ const OllamaSettings: React.FC = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {connectionStatus === 'success' && (
+            <Alert className="bg-green-500/10 border-green-500/30">
+              <Check className="h-4 w-4 text-green-500" />
+              <AlertDescription className="text-green-500">
+                Connection to Ollama server successful. Local AI is ready to use.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {connectionStatus === 'failed' && (
+            <Alert className="bg-red-500/10 border-red-500/30">
+              <AlertTriangle className="h-4 w-4 text-red-500" />
+              <AlertDescription className="text-red-500">
+                Failed to connect to Ollama server. Please check that Ollama is running and the server URL is correct.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="ollama-enabled">Enable Ollama Integration</Label>
@@ -80,7 +122,7 @@ const OllamaSettings: React.FC = () => {
             <Switch
               id="ollama-enabled"
               checked={config.enabled}
-              onCheckedChange={(checked) => setConfig({ ...config, enabled: checked })}
+              onCheckedChange={handleToggleEnable}
             />
           </div>
 
@@ -90,11 +132,10 @@ const OllamaSettings: React.FC = () => {
               id="server-url"
               value={config.serverUrl}
               onChange={(e) => setConfig({ ...config, serverUrl: e.target.value })}
-              placeholder="http://127.0.0.1:11434"
-              disabled={!config.enabled}
+              placeholder="http://localhost:11434"
             />
             <p className="text-xs text-muted-foreground">
-              Default URL is http://127.0.0.1:11434 for local installations
+              Default URL is http://localhost:11434 for local installations
             </p>
           </div>
 
@@ -103,7 +144,6 @@ const OllamaSettings: React.FC = () => {
             <Select
               value={config.model}
               onValueChange={(value) => setConfig({ ...config, model: value })}
-              disabled={!config.enabled}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select AI model" />
@@ -125,7 +165,7 @@ const OllamaSettings: React.FC = () => {
             <Button 
               variant="outline" 
               onClick={handleTestConnection} 
-              disabled={isConnecting || !config.enabled}
+              disabled={isConnecting}
               className="flex items-center gap-2"
             >
               {isConnecting ? (
@@ -144,23 +184,11 @@ const OllamaSettings: React.FC = () => {
 
             <Button 
               onClick={handleSaveConfig}
-              disabled={!config.enabled}
+              disabled={config.enabled && connectionStatus !== 'success'}
             >
               Save Settings
             </Button>
           </div>
-
-          {connectionStatus === 'success' && (
-            <div className="mt-2 p-2 bg-green-500/10 border border-green-500/20 rounded text-sm text-green-500">
-              Connection to Ollama server successful. Local AI is ready to use.
-            </div>
-          )}
-
-          {connectionStatus === 'failed' && (
-            <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded text-sm text-red-500">
-              Failed to connect to Ollama server. Please check that Ollama is running and the server URL is correct.
-            </div>
-          )}
         </CardContent>
       </Card>
 
@@ -182,6 +210,16 @@ const OllamaSettings: React.FC = () => {
               <li>Enable Ollama integration in these settings</li>
             </ol>
           </div>
+          
+          <div className="bg-muted p-3 rounded-md text-sm">
+            <h4 className="font-medium mb-1">Troubleshooting Connection Issues:</h4>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Verify Ollama is installed and running on your machine</li>
+              <li>Check that the server URL includes http:// and the correct port (default: 11434)</li>
+              <li>Make sure any firewalls are configured to allow traffic to the Ollama server</li>
+              <li>If you're using a non-default host or containerized setup, adjust the URL accordingly</li>
+            </ul>
+          </div>
         </CardContent>
       </Card>
     </div>
@@ -189,4 +227,3 @@ const OllamaSettings: React.FC = () => {
 };
 
 export default OllamaSettings;
-

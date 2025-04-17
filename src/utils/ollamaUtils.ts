@@ -5,7 +5,7 @@ import { AIPurpose, OllamaConfig } from "@/types";
 // Default Ollama configuration
 export const defaultOllamaConfig: OllamaConfig = {
   enabled: false,
-  serverUrl: "http://127.0.0.1:11434",
+  serverUrl: "http://localhost:11434", // Changed from 127.0.0.1 to localhost for better compatibility
   model: "llama3"
 };
 
@@ -47,6 +47,7 @@ export const generateOllamaResponse = async (purpose: AIPurpose, content: string
   }
   
   try {
+    console.log("Sending request to Ollama API:", config.serverUrl);
     const systemPrompt = getSystemPromptForPurpose(purpose);
     
     const response = await fetch(`${config.serverUrl}/api/generate`, {
@@ -63,7 +64,9 @@ export const generateOllamaResponse = async (purpose: AIPurpose, content: string
     });
 
     if (!response.ok) {
-      throw new Error(`Ollama API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error("Ollama API error:", response.status, errorText);
+      throw new Error(`Ollama API error (${response.status}): ${errorText || "Unknown error"}`);
     }
 
     const data = await response.json();
@@ -96,19 +99,36 @@ const getSystemPromptForPurpose = (purpose: AIPurpose): string => {
 
 // Test Ollama connection
 export const testOllamaConnection = async (config: OllamaConfig): Promise<boolean> => {
+  console.log("Testing Ollama connection to:", config.serverUrl);
+  
   try {
+    // First, let's validate the URL format
+    if (!config.serverUrl.startsWith('http://') && !config.serverUrl.startsWith('https://')) {
+      console.error("Invalid URL format. URL must start with http:// or https://");
+      return false;
+    }
+    
+    // Use a simple endpoint that should be available on all Ollama servers
     const response = await fetch(`${config.serverUrl}/api/tags`, {
       method: "GET",
+      headers: {
+        'Accept': 'application/json',
+      },
+      // Add a timeout to prevent long waits if server is unreachable
+      signal: AbortSignal.timeout(5000) 
     });
     
     if (!response.ok) {
-      throw new Error(`Ollama server connection failed: ${response.status}`);
+      const errorText = await response.text();
+      console.error("Ollama connection failed:", response.status, errorText);
+      return false;
     }
     
+    const data = await response.json();
+    console.log("Ollama connection successful, available models:", data);
     return true;
   } catch (error) {
     console.error("Ollama connection test failed:", error);
     return false;
   }
 };
-

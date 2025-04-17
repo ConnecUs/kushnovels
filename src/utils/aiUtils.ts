@@ -1,8 +1,7 @@
+
 import { toast } from "sonner";
 import { AIPurpose, AIPrompt } from "../types";
 import { generateOllamaResponse, getOllamaConfig } from "./ollamaUtils";
-
-const API_KEY = ""; // In a real app, this would be stored securely
 
 // Generate prompts based on purpose
 export const generatePrompt = (purpose: AIPurpose, context: string): string => {
@@ -32,11 +31,15 @@ export const getAIResponse = async (prompt: AIPrompt): Promise<string> => {
     
     // Check if Ollama is enabled
     const ollamaConfig = getOllamaConfig();
+    console.log("Ollama config:", ollamaConfig);
     
     if (ollamaConfig.enabled) {
+      console.log("Ollama is enabled, attempting to use Ollama for response generation");
       try {
         // Use Ollama for response generation
-        return await generateOllamaResponse(prompt.purpose, prompt.content);
+        const response = await generateOllamaResponse(prompt.purpose, prompt.content);
+        console.log("Ollama response received successfully");
+        return response;
       } catch (error) {
         console.error("Error with Ollama, falling back to mock responses:", error);
         toast.error("Ollama connection failed. Using mock responses instead.");
@@ -44,6 +47,7 @@ export const getAIResponse = async (prompt: AIPrompt): Promise<string> => {
       }
     }
     
+    console.log("Ollama is disabled, using mock responses");
     // If Ollama is not enabled, use mock responses
     await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API latency
     return getMockResponse(prompt.purpose);
@@ -54,7 +58,7 @@ export const getAIResponse = async (prompt: AIPrompt): Promise<string> => {
   }
 };
 
-// Mock AI response function (extracted from the original getAIResponse)
+// Mock AI response function
 const getMockResponse = (purpose: AIPurpose): string => {
   // Sample responses for demo purposes
   const responses = {
