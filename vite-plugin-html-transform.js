@@ -1,3 +1,4 @@
+
 // Custom Vite plugin to transform the HTML output
 export default function htmlTransform() {
   return {
@@ -16,14 +17,14 @@ export default function htmlTransform() {
         return match;
       });
       
-      // Insert all scripts at the end of body
+      // Insert all scripts at the end of body, ensuring the Lovable script tag is before the app script
       return html.replace('</body>', () => {
         let result = '';
+        result += '<script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>\n    ';
         headScripts.forEach(script => {
           result += `<script${script.attrs}>${script.content}</script>\n    `;
         });
-        result += '<!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->\n    ';
-        result += '<script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>\n  </body>';
+        result += '<!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->\n  </body>';
         return result;
       });
     }
