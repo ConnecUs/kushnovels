@@ -8,7 +8,8 @@ import htmlTransform from "./vite-plugin-html-transform.js";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  base: "/kushnovel-genesis-writer/",
+  // Remove or set to "/" if not deploying to a subfolder
+  base: "/",
   server: {
     host: "::",
     port: 8080,
