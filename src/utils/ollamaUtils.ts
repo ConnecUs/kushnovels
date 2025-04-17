@@ -21,21 +21,26 @@ export const availableOllamaModels = [
 
 // Get Ollama configuration from localStorage or use default
 export const getOllamaConfig = (): OllamaConfig => {
-  const storedConfig = localStorage.getItem("ollamaConfig");
-  if (storedConfig) {
-    try {
+  try {
+    const storedConfig = localStorage.getItem("ollamaConfig");
+    if (storedConfig) {
       return JSON.parse(storedConfig);
-    } catch (error) {
-      console.error("Error parsing Ollama config:", error);
-      return defaultOllamaConfig;
     }
+  } catch (error) {
+    console.error("Error parsing Ollama config:", error);
+    // In case of any errors, return the default config
   }
   return defaultOllamaConfig;
 };
 
 // Save Ollama configuration to localStorage
 export const saveOllamaConfig = (config: OllamaConfig): void => {
-  localStorage.setItem("ollamaConfig", JSON.stringify(config));
+  try {
+    localStorage.setItem("ollamaConfig", JSON.stringify(config));
+  } catch (error) {
+    console.error("Error saving Ollama config:", error);
+    toast.error("Failed to save Ollama settings");
+  }
 };
 
 // Generate response using Ollama API
