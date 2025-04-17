@@ -7,26 +7,11 @@ export default function htmlTransform() {
       // Remove any existing gptengineer.js script
       html = html.replace(/<script src="https:\/\/cdn\.gpteng\.co\/gptengineer\.js"[^>]*><\/script>/g, '');
       
-      // Move all scripts from head to body
-      const headScripts = [];
-      html = html.replace(/<script([^>]*)>([\s\S]*?)<\/script>/g, (match, attrs, content) => {
-        if (html.indexOf(match) < html.indexOf('</head>')) {
-          headScripts.push({ attrs, content });
-          return '';
-        }
-        return match;
-      });
-      
-      // Insert all scripts at the end of body, ensuring the Lovable script tag is before the app script
-      return html.replace('</body>', () => {
-        let result = '';
-        result += '<script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>\n    ';
-        headScripts.forEach(script => {
-          result += `<script${script.attrs}>${script.content}</script>\n    `;
-        });
-        result += '<!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->\n  </body>';
-        return result;
-      });
+      // Insert the gptengineer.js script before the app script
+      return html.replace(
+        /<script type="module" src="\/src\/main\.tsx"><\/script>/,
+        '<script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>\n    <script type="module" src="/src/main.tsx"></script>'
+      );
     }
   };
 }
