@@ -8,8 +8,8 @@ import htmlTransform from "./vite-plugin-html-transform";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
-  // Set base to root path
-  base: "/",
+  // Set base to accommodate GitHub Pages path
+  base: "./",
   server: {
     host: "::",
     port: 8080,
