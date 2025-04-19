@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { OllamaConfig } from '@/types';
 import { getOllamaConfig, saveOllamaConfig, testOllamaConnection, availableOllamaModels } from '@/utils/ollamaUtils';
-import { RefreshCw, Check, X, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Check, X, AlertTriangle, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -24,17 +24,14 @@ const OllamaSettings: React.FC = () => {
   const [lastTestedConfig, setLastTestedConfig] = useState<string>('');
 
   useEffect(() => {
-    // Load config from localStorage on mount
     setConfig(getOllamaConfig());
   }, []);
 
   const handleSaveConfig = () => {
-    // Only save if Ollama is disabled or if the connection was successful
     if (!config.enabled || (connectionStatus === 'success' && lastTestedConfig === JSON.stringify(config))) {
       saveOllamaConfig(config);
       toast.success('Ollama settings saved successfully');
     } else if (config.enabled) {
-      // If Ollama is enabled but not successfully tested, show a warning
       toast.warning('Please test the connection before saving enabled settings');
     }
   };
@@ -54,7 +51,11 @@ const OllamaSettings: React.FC = () => {
         setLastTestedConfig(currentConfigString);
         toast.success('Successfully connected to Ollama server');
       } else {
-        toast.error('Failed to connect to Ollama server');
+        if (window.location.hostname !== 'localhost' && !config.serverUrl.includes('https://')) {
+          toast.error('When accessing from the web, Ollama server must use HTTPS');
+        } else {
+          toast.error('Failed to connect to Ollama server');
+        }
       }
     } catch (error) {
       console.error("Error during connection test:", error);
@@ -67,12 +68,9 @@ const OllamaSettings: React.FC = () => {
 
   const handleToggleEnable = (checked: boolean) => {
     if (checked && connectionStatus !== 'success') {
-      // If trying to enable without a successful connection test
       toast.warning('Please test the connection first before enabling Ollama');
-      // Don't enable yet, but update the rest of the config
       setConfig(prev => ({ ...prev }));
     } else {
-      // Otherwise update the config normally
       setConfig(prev => ({ ...prev, enabled: checked }));
     }
   };
@@ -90,7 +88,22 @@ const OllamaSettings: React.FC = () => {
         <CardHeader>
           <CardTitle>Ollama Configuration</CardTitle>
           <CardDescription>
-            Connect to your locally running Ollama instance to use local AI models for text generation.
+            {window.location.hostname !== 'localhost' ? (
+              <Alert className="mt-2 bg-yellow-500/10 border-yellow-500/30">
+                <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                <AlertDescription className="text-yellow-700">
+                  You're accessing this app from the web ({window.location.hostname}). 
+                  To connect to Ollama, you'll need either:
+                  <ul className="list-disc list-inside mt-2 ml-2">
+                    <li>Run the app locally</li>
+                    <li>Use a publicly accessible Ollama server with HTTPS</li>
+                    <li>Continue using mock responses (currently working)</li>
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              "Connect to your locally running Ollama instance to use local AI models for text generation."
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
